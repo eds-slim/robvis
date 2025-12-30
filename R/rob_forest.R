@@ -37,7 +37,7 @@ rob_forest <-
            ...) {
 
     # mod by ES
-    print('test')
+    print('test2')
 
     # Check that res is of class RMA
     if (!("rma" %in% class(res))) {
