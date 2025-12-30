@@ -36,6 +36,8 @@ rob_forest <-
            rob_legend_cex = 0.9,
            ...) {
 
+    # mod by ES
+    print('test')
 
     # Check that res is of class RMA
     if (!("rma" %in% class(res))) {
