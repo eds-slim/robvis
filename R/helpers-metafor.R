@@ -33,7 +33,7 @@ mlabfun <- function(text, res) {
 
 
 
-annotate_poly <- function(yi, ci.lb, ci.ub, atransf = exp, textpos = 2, width, rows, cex=1.2, font=1){
+annotate_poly <- function(yi, ci.lb, ci.ub, atransf = exp, textpos = 2, width, rows, cex=1, font=1){
 
   if (is.function(atransf)) {
 

@@ -12,7 +12,7 @@
 #' @param rob_me Optional value defining the result of the Risk-Of-Bias due to
 #'   Missing Evidence (ROB-ME) assessment for this synthesis. By default (rob_me
 #'   = NULL), this is omitted from the plot.
-#' @param rob_levels Vector of judgments [e.g. c("Low","Some
+#' @param rob_levels Vector otoof judgments [e.g. c("Low","Some
 #'   concerns","High","Critical")] that controls the ordering of subgroups
 #'   within the plot
 #' @param title Text to use for plot title
@@ -26,44 +26,46 @@
 #'
 #' @export
 
-rob_forest_rates <-
+rob_forest_times <-
   function(res,
-           rob_tool = "ROB2",
            rob_me = NULL,
            rob_levels = NULL,
            title = NULL,
            rob_legend = TRUE,
            rob_legend_cex = 0.9,
            group.var = 'overall',
-           refline = 1,
+           x_gap = 30,
            ...) {
 
     # mod by ES
 
-    #overall <- res$data$overall
     
     # Check that res is of class RMA
     if (!("rma" %in% class(res))) {
       stop("Result objects need to be of class \"meta\" - output from metafor package functions")
     }
 
-    # Check that the specified tool is supported
-    check_tool(rob_tool, forest = TRUE)
+
+    colnames(res$data$df) <- stringr::str_to_lower(colnames(res$data$df))
 
 
-    if (is.null(rob_levels)) {
-      rob_levels <- get_judgements(rob_tool)
-    }
-
-    colnames(res$data) <- stringr::str_to_lower(colnames(res$data))
-
-
-    dat <- res$data %>%
+    dat <- res$data$df %>%
       dplyr::mutate(overall = factor(overall, levels = rob_levels)) %>%
-      dplyr::arrange(!!sym(group.var), dplyr::desc(year))
+      dplyr::arrange(!!sym(group.var), year) |> 
+      rowwise() |> 
+      mutate(iqr.g1 = replace_na(iqr.g1, q3.g1 - q1.g1)
+             , iqr.g2 = replace_na(iqr.g2, q3.g2 - q1.g2)) |> 
+      mutate(loc.g1 = first(na.omit(c(med.g1, mean.g1)))
+             , loc.g2 = first(na.omit(c(med.g2, mean.g2)))
+             , sc.g1 = first(na.omit(c(iqr.g1, sd.g1)))
+             , sc.g2 = first(na.omit(c(iqr.g2, sd.g2)))) |> 
+      mutate(es.g1 = sprintf('%5.1f (%5.1f)', loc.g1, sc.g1)
+             , es.g2 = sprintf('%5.1f (%5.1f)', loc.g2, sc.g2)) |> 
+      ungroup()    
+
+
+    print(dat)
     
-
-
     # Get maximum domain
 
     max_domain_column <- dat %>%
@@ -93,9 +95,7 @@ rob_forest_rates <-
         dplyr::mutate(dplyr::across(c(min, max, heading),~.-1))
     }
     
-    print(dat)
-    res <- stats::update(res, data = dat)
-    print(res$data)
+    #res <- stats::update(res, data = dat) ## no update fpr metamedian analysis
 
     
     rows <- c()
@@ -107,23 +107,17 @@ rob_forest_rates <-
     }
     rows <- rows + 1
     
+    print(rows)
 
     arg <- list(...)
 
-    if (is.null(arg$at)) {
-      x_adj <- log(3)
-    } else {
-      x_adj <- arg$at[length(arg$at)]
-    }
+   
+    x_adj <- arg$at[length(arg$at)]
+    
+    x_min <- arg$x_min
+    arg$x_min <- NULL
 
-    if (is.null(arg$x_min)) {
-      x_min = -10
-    } else {
-      x_min <- arg$x_min
-      arg$x_min <- NULL
-    }
-
-    x_max = 4.6 - 3 + x_adj
+    x_max = x_adj + x_gap
     textpos <- c(x_min, x_max-0.5)
     y_max <- max(rows)+4
 
@@ -134,9 +128,9 @@ rob_forest_rates <-
       dplyr::mutate(dplyr::across(dplyr::matches("^d.$|overall"),
                                   clean_data))
 
-    x_pos <- seq(x_max, by = 0.2, length.out = max_domain_column - 2)
+    x_pos <- seq(x_max + 10, by = 10, length.out = max_domain_column - 2)
 
-    x_overall_pos <- max(x_pos) + 1
+    x_overall_pos <- max(x_pos) + 10
 
     # Convenience vector, specifying x-axis positions for all risk of bias columns
     header_row <- c(x_pos, x_overall_pos)
@@ -144,40 +138,11 @@ rob_forest_rates <-
     legend_pos <- x_max+(max(header_row)-min(header_row))/2
 
     # New right-hand x-axis limit
-    new_x_lim <- x_overall_pos + .5
+    new_x_lim <- x_overall_pos + 10
 
-    rob_colours <- get_colour(rob_tool, "colourblind")
+    rob_colours <- get_colour('ROBINS-I', "colourblind")
 
-    if (rob_tool %in% c("ROB2", "QUADAS-2")) {
-      judgements<-   c("High risk of bias",
-                       "Some concerns",
-                       "Low risk of bias",
-                       "No information")
 
-      cols <- c(
-        h = rob_colours$high_colour,
-        s = rob_colours$concerns_colour,
-        l = rob_colours$low_colour,
-        n = rob_colours$ni_colour,
-        x = rob_colours$na_colour
-      )
-
-      syms <- c(h = "X",
-                s = "-",
-                l = "+",
-                n = "?",
-                x = ""
-      )
-
-      shapes <- c(h = 15,
-                  s = 15,
-                  l = 15,
-                  n = 15,
-                  x = 15
-      )
-    }
-
-    if (rob_tool == "ROBINS-I") {
       judgements<-   c("Critical risk of bias",
                        "Serious risk of bias",
                        "Moderate risk of bias",
@@ -206,42 +171,8 @@ rob_forest_rates <-
                   l = 19,
                   n = 19,
                   x = 19)
-    }
 
-
-    if (rob_tool == "ROBINS-E") {
-      judgements<-   c("Very high risk of bias",
-                       "High risk of bias",
-                       "Some concerns",
-                       "Low risk of bias",
-                       "No information")
-      cols <- c(
-        v = rob_colours$critical_colour,
-        h = rob_colours$high_colour,
-        s = rob_colours$concerns_colour,
-        l = rob_colours$low_colour,
-        n = rob_colours$ni_colour,
-        x = rob_colours$na_colour
-      )
-
-      syms <- c(v = "!",
-                h = "X",
-                s = "-",
-                l = "+",
-                n = "",
-                x = "")
-
-
-      shapes <- c(v = 15,
-                  h = 15,
-                  s = 15,
-                  l = 15,
-                  n = 15,
-                  x = 15)
-
-    }
-
-    rob_psize = 3
+    rob_psize = 2.5
     tsize <- rob_psize * 0.3
 
     #-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-
@@ -258,19 +189,17 @@ rob_forest_rates <-
     if (is.null(arg$mlab)) {
       arg$mlab = mlabfun("RE Model for all studies", res)
     }
+    
+    print(res$data$df)
 
     arg$x <- res
     arg$xlim <- c(x_min, new_x_lim)
-    arg$transf <- exp
-    arg$cex <- 0.8
     arg$ylim=c(-2, y_max)
     arg$rows <- rows
     arg$textpos <- textpos
-    arg$refline <- refline
     arg$col <- 'darkblue'
-    arg$ilab <- cbind(dat$n1i, dat$ai, dat$n2i, dat$ci)
-    arg$ilab.xpos <- c(-1.5, -1.1, -.65, -.25)
-    arg$ilab.lab <- c('n', 'a', 'n', 'c')
+    arg$ilab <- cbind(dat$n.g1, dat$es.g1, dat$n.g2, dat$es.g2)
+    arg$ilab.lab <- c('n', 'OTG/ min', 'n', 'OTG/ min')
     arg$ilab.pos <- 2
 
     ### set up forest plot (with 2x2 table counts added; the 'rows' argument is
@@ -279,23 +208,26 @@ rob_forest_rates <-
     #        cex=1.2, ylim=c(-1.5, y_max), rows=rows, textpos=textpos,
     #        mlab=mlab, addpred = addpred)
     
-    par(mar = c(5, 4, 4, 2) + 0.1)
+    par(mar = c(5, 4, 4, 2) + 0.1, xpd = NA)
     f <- do.call(metafor::forest, arg)
 
-    graphics::text(mean(f$ilab.xpos[1:2]), y_max, 'Direct transport', xpd = NA, font=2, adj = .5)
-    graphics::text(mean(f$ilab.xpos[3:4]), y_max, 'Control', xpd = NA, font=2, adj = .5)
-
+    graphics::text(mean(f$ilab.xpos[1:2]), y_max, 'Direct transport', font=2, adj = .5)
+    graphics::text(mean(f$ilab.xpos[3:4]), y_max, 'Control', font=2, adj = .5)
+    segments(x0 = f$ilab.xpos[1]-10, y0 = y_max - .5, x1 = f$ilab.xpos[2]+10, y1 = y_max - .5 )
+    segments(f$ilab.xpos[3]-10, y_max - .5, f$ilab.xpos[4]+10, y_max - .5)
+    
+    
     ### set font expansion factor (as in forest() above) and use a bold font
 
     op <- graphics::par(font=2)
 
-    ### switch to bold italic font
-    graphics::par(font=2)
+    ### switch to italic font
+    graphics::par(font=3)
 
     ### add text for the subgroups
     for (i in 1:nrow(dat_rob_vec)) {
 
-      graphics::text(x_min, dat_rob_vec$heading[i] + 1, pos=4, dat_rob_vec[[group.var]][i], cex = 1, xpd = NA)
+      graphics::text(x_min, dat_rob_vec$heading[i] + 1, pos=4, dat_rob_vec[[group.var]][i], cex = 1.2)
     }
 
     ### set par back to the original settings
@@ -308,8 +240,10 @@ rob_forest_rates <-
 
     graphics::par(font = 2)
     # Need to add handling of top here
-    graphics::text(mean(header_row), y_max, labels = "Risk of Bias", cex=1, xpd = NA)
-    graphics::text(header_row, y_max-2 + 1, labels = headers, cex=1)
+    graphics::text(mean(header_row), y_max, labels = "Risk of Bias")
+    graphics::text(header_row, y_max-2 + 1, labels = headers)
+    segments(x0 = header_row[1], y0 = y_max - .5, x1 = header_row[length(header_row)], y1 = y_max - .5 )
+    
     graphics::par(op)
 
     # Plot domain points
@@ -338,14 +272,13 @@ rob_forest_rates <-
     # Add sub-group, summary polygons & text
 
     rma_flexi <- function(x) {
-        stats::update(res,
-          subset = (dat[[group.var]] == x)
+        rma(yi = res$yi, vi = res$vi,
+          subset = (res$data$df[[group.var]] == x)
         )
       }
 
     subgroup_res <- purrr::map(unique(dat[[group.var]]), rma_flexi)
 
-    
     
     if (length(unique(dat[[group.var]]))>1) {
 
@@ -358,36 +291,41 @@ rob_forest_rates <-
 
         metafor::addpoly(
           subgroup_res[[i]],
-          # fonts = 4,
+          #fonts = c('serif'=3, 'mono'=3),
           row = dat_rob_vec$stats[i] + 1,
-          cex = 0.8,
           textpos=textpos,
-          xpd = NA,
           col = 'lightblue',
          # transf = exp,
           annotate = F,
-          mlab = mlabfun("RE Model for Subgroup", subgroup_res[[i]])
+          mlab = mlabfun("\tRE Model for Subgroup", subgroup_res[[i]])
         )
-
+        
         annotate_poly(subgroup_res[[i]]$b,
                       subgroup_res[[i]]$ci.lb,
                       subgroup_res[[i]]$ci.ub,
-                      textpos = textpos,
-                      rows = dat_rob_vec$stats[[i]] + 1, cex = 0.8)
+                      textpos = textpos[2],
+                      atransf = NULL,
+                      rows = dat_rob_vec$stats[[i]] + 1, font = 3)
 
       }
     }
-
+  
+  rect(f$textpos[2], -1.5, x_adj, -0.5, col="white", border=NA)
+  annotate_poly(res$b, res$ci.lb, res$ci.ub,
+                  textpos = textpos[2],
+                  atransf = NULL,
+                  rows = -1, font = 2)
+    
     #-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-
 
     if (length(unique(dat[[group.var]]))>1 && nrow(dat)>1) {
 
       # Fit meta-regression model to test for subgroup differences
-      subgroup_res <- stats::update(res, mods = ~ dat[[group.var]], method = "DL")
+      subgroup_res <- rma(yi = res$yi, vi = res$vi, mods = ~ dat[[group.var]], method = "DL")
 
 
       ### add text for the test of subgroup differences
-      graphics::text(x_min,-1.8, pos = 4, cex = 0.8, xpd = NA,  bquote(
+      graphics::text(x_min,-1.8, pos = 4,  bquote(
         paste(
           "Test for Subgroup Differences: ",
           Q[M],
@@ -409,44 +347,10 @@ rob_forest_rates <-
     
     if(!is.null(title)){
       graphics::par(font = 2)
-      graphics::text(x_min, y_max, pos=4, bquote(bold(underline(.(title)))), cex = 1.2, xpd = NA)
+      graphics::text(x_min, y_max, pos=4, bquote(bold(underline(.(title)))), cex = 1.2)
       graphics::par(op)
     }
 
-    # Add missing evidence
-    if (!is.null(rob_me)) {
-    rob_me <- clean_data(rob_me)
-
-    rob_me_colours <- get_colour("ROB2", "cochrane")
-
-    rob_me_cols <- c(
-      h = rob_me_colours$high_colour,
-      s = rob_me_colours$concerns_colour,
-      l = rob_me_colours$low_colour,
-      n = rob_me_colours$ni_colour,
-      x = rob_me_colours$na_colour
-    )
-
-    rob_me_syms <- c(h = "X",
-                     s = "-",
-                     l = "+",
-                     n = "?",
-                     x = ""
-    )
-
-    graphics::text(x_pos[1]-.5,-1,pos=4,cex=1.2,"ROB Missing Evidence: ")
-
-    
-    
-    graphics::points(
-      x_overall_pos,
-      -1,
-      pch = 15,
-      col = scales::alpha(rob_me_cols[rob_me],0.6),
-      cex = rob_psize
-    )
-    graphics::text(x_overall_pos,font = 2, -1, rob_me_syms[rob_me], cex = tsize)
-    }
 
     if (rob_legend == TRUE) {
 
@@ -468,4 +372,4 @@ rob_forest_rates <-
 
 
   }
-environment(rob_forest_rates) <- environment(rob_forest)
+environment(rob_forest_times) <- environment(rob_forest)
