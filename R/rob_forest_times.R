@@ -27,18 +27,19 @@
 #' @export
 
 rob_forest_times <-
-  function(res,
-           rob_me = NULL,
-           rob_levels = NULL,
-           title = NULL,
-           rob_legend = TRUE,
-           rob_legend_cex = 0.9,
-           group.var = 'overall',
-           x_gap = 30,
-           ...) {
+  function(res
+           , rob_me = NULL
+           , rob_levels = NULL
+           , title = NULL
+           , rob_legend = TRUE
+           , rob_legend_cex = 0.9
+           , group.var = 'overall'
+           , layout = c(1,1,1)
+           , es = 'OTG/ min'
+           , ...
+           ) {
 
     # mod by ES
-
     
     # Check that res is of class RMA
     if (!("rma" %in% class(res))) {
@@ -49,30 +50,19 @@ rob_forest_times <-
     colnames(res$data$df) <- stringr::str_to_lower(colnames(res$data$df))
 
 
-    dat <- res$data$df %>%
-      dplyr::mutate(overall = factor(overall, levels = rob_levels)) %>%
-      dplyr::arrange(!!sym(group.var), year) |> 
-      rowwise() |> 
-      mutate(iqr.g1 = replace_na(iqr.g1, q3.g1 - q1.g1)
-             , iqr.g2 = replace_na(iqr.g2, q3.g2 - q1.g2)) |> 
-      mutate(loc.g1 = first(na.omit(c(med.g1, mean.g1)))
-             , loc.g2 = first(na.omit(c(med.g2, mean.g2)))
-             , sc.g1 = first(na.omit(c(iqr.g1, sd.g1)))
-             , sc.g2 = first(na.omit(c(iqr.g2, sd.g2)))) |> 
-      mutate(es.g1 = sprintf('%5.1f (%5.1f)', loc.g1, sc.g1)
-             , es.g2 = sprintf('%5.1f (%5.1f)', loc.g2, sc.g2)) |> 
-      ungroup()    
+    dat <- res$data$df |> 
+      dplyr::mutate(overall = factor(overall, levels = rob_levels)) |> 
+      dplyr::arrange(!!sym(group.var), desc(year))
+       
 
 
-    print(dat)
-    
     # Get maximum domain
 
-    max_domain_column <- dat %>%
-      dplyr::select(dplyr::matches("^d.$")) %>%
-      colnames() %>%
-      gsub("d","",.) %>%
-      as.numeric() %>%
+    max_domain_column <- dat |> 
+      dplyr::select(dplyr::matches("^d.$")) |> 
+      colnames() |> 
+      gsub("d", "", x = _) |> 
+      as.numeric() |> 
       max() + 2
 
 
@@ -80,19 +70,19 @@ rob_forest_times <-
     # Will be important when adding argument to prevent subgroup analyses
     offset_n <- 3
 
-    dat_rob_vec <- dat %>%
-      dplyr::mutate(row_n = 1:dplyr::n()) %>%
-      dplyr::group_by(!!sym(group.var)) %>%
-      dplyr::summarise(n=dplyr::n(),max = max(row_n), min = min(row_n)) %>%
-      dplyr::mutate(offset = seq(1,length(unique(.[[group.var]]))*offset_n,by=offset_n)) %>%
-      dplyr::mutate(min = min+offset, max =max+offset, heading = max+1, stats = min-1.25) %>%
-      dplyr::mutate(min = ifelse(n==1,min-1,min),
-                    max = ifelse(n==1,max-1,max),
-                    heading = ifelse(n==1,heading-1,heading))
+    dat_rob_vec <- dat |> 
+      dplyr::mutate(row_n = 1:dplyr::n()) |> 
+      dplyr::group_by(!!sym(group.var)) |> 
+      dplyr::summarise(n = dplyr::n(), max = max(row_n), min = min(row_n)) %>% 
+      dplyr::mutate(offset = seq(1, length(unique(.[[group.var]]))*offset_n, by = offset_n)) |> 
+      dplyr::mutate(min = min+offset, max = max+offset, heading = max+1, stats = min-1.25) |> 
+      dplyr::mutate(min = ifelse(n==1, min-1, min)
+                    , max = ifelse(n==1, max-1, max)
+                    , heading = ifelse(n==1, heading-1, heading))
 
     if (length(unique(dat[[group.var]]))==1) {
-      dat_rob_vec <- dat_rob_vec %>%
-        dplyr::mutate(dplyr::across(c(min, max, heading),~.-1))
+      dat_rob_vec <- dat_rob_vec |> 
+        dplyr::mutate(dplyr::across(c(min, max, heading), ~. -1))
     }
     
     #res <- stats::update(res, data = dat) ## no update fpr metamedian analysis
@@ -111,26 +101,26 @@ rob_forest_times <-
 
     arg <- list(...)
 
+    dd <- (arg$at[length(arg$at)] - arg$at[1])/layout[2]
+    x_min <- arg$at[1] - dd*layout[1]
+    arg$ilab.xpos <- arg$at[1] - c(1/3+1/5, 1/3, 1/5, 0)*dd*layout[1]
    
-    x_adj <- arg$at[length(arg$at)]
-    
-    x_min <- arg$x_min
-    arg$x_min <- NULL
+  
 
-    x_max = x_adj + x_gap
-    textpos <- c(x_min, x_max-0.5)
+    x_max = arg$at[length(arg$at)] + dd*layout[3]/3
+    textpos <- c(x_min, x_max)
     y_max <- max(rows)+4
 
     #-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-
     # Deal with adding rob data
 
-    dat <- dat %>%
-      dplyr::mutate(dplyr::across(dplyr::matches("^d.$|overall"),
-                                  clean_data))
+    dat <- dat |> 
+      dplyr::mutate(dplyr::across(dplyr::matches("^d.$|overall"), clean_data))
 
-    x_pos <- seq(x_max + 10, by = 10, length.out = max_domain_column - 2)
+    ddd <- 2/3*dd*layout[3]/(max_domain_column)
+    x_pos <- seq(x_max + ddd, by = ddd, length.out = max_domain_column - 2)
 
-    x_overall_pos <- max(x_pos) + 10
+    x_overall_pos <- max(x_pos) + ddd
 
     # Convenience vector, specifying x-axis positions for all risk of bias columns
     header_row <- c(x_pos, x_overall_pos)
@@ -138,39 +128,42 @@ rob_forest_times <-
     legend_pos <- x_max+(max(header_row)-min(header_row))/2
 
     # New right-hand x-axis limit
-    new_x_lim <- x_overall_pos + 10
+    new_x_lim <- x_overall_pos
 
     rob_colours <- get_colour('ROBINS-I', "colourblind")
 
 
-      judgements<-   c("Critical risk of bias",
-                       "Serious risk of bias",
-                       "Moderate risk of bias",
-                       "Low risk of bias",
-                       "No information")
+      judgements<-   c("Critical risk of bias"
+                       , "Serious risk of bias"
+                       , "Moderate risk of bias"
+                       , "Low risk of bias"
+                       , "No information"
+                       )
       cols <- c(
-        c = rob_colours$critical_colour,
-        s = rob_colours$high_colour,
-        m = rob_colours$concerns_colour,
-        l = rob_colours$low_colour,
-        n = rob_colours$ni_colour,
-        x = rob_colours$na_colour
+        c = rob_colours$critical_colour
+        , s = rob_colours$high_colour
+        , m = rob_colours$concerns_colour
+        , l = rob_colours$low_colour
+        , n = rob_colours$ni_colour
+        , x = rob_colours$na_colour
       )
 
-      syms <- c(c = "!",
-                s = "×",
-                m = "?",
-                l = "+",
-                n = "",
-                x = "")
+      syms <- c(c = "!"
+                , s = "×"
+                , m = "?"
+                , l = "+"
+                , n = ""
+                , x = ""
+                )
 
 
-      shapes <- c(c = 19,
-                  s = 19,
-                  m = 19,
-                  l = 19,
-                  n = 19,
-                  x = 19)
+      shapes <- c(c = 19
+                  , s = 19
+                  , m = 19
+                  , l = 19
+                  , n = 19
+                  , x = 19
+                  )
 
     rob_psize = 2.5
     tsize <- rob_psize * 0.3
@@ -190,7 +183,6 @@ rob_forest_times <-
       arg$mlab = mlabfun("RE Model for all studies", res)
     }
     
-    print(res$data$df)
 
     arg$x <- res
     arg$xlim <- c(x_min, new_x_lim)
@@ -199,7 +191,7 @@ rob_forest_times <-
     arg$textpos <- textpos
     arg$col <- 'darkblue'
     arg$ilab <- cbind(dat$n.g1, dat$es.g1, dat$n.g2, dat$es.g2)
-    arg$ilab.lab <- c('n', 'OTG/ min', 'n', 'OTG/ min')
+    arg$ilab.lab <- c('n', es, 'n', es)
     arg$ilab.pos <- 2
 
     ### set up forest plot (with 2x2 table counts added; the 'rows' argument is
@@ -211,10 +203,12 @@ rob_forest_times <-
     par(mar = c(5, 4, 4, 2) + 0.1, xpd = NA)
     f <- do.call(metafor::forest, arg)
 
-    graphics::text(mean(f$ilab.xpos[1:2]), y_max, 'Direct transport', font=2, adj = .5)
-    graphics::text(mean(f$ilab.xpos[3:4]), y_max, 'Control', font=2, adj = .5)
-    segments(x0 = f$ilab.xpos[1]-10, y0 = y_max - .5, x1 = f$ilab.xpos[2]+10, y1 = y_max - .5 )
-    segments(f$ilab.xpos[3]-10, y_max - .5, f$ilab.xpos[4]+10, y_max - .5)
+    graphics::text(mean(f$ilab.xpos[2]), y_max, 'Direct transport', font=2, adj = 1)
+    graphics::text(mean(f$ilab.xpos[4]), y_max, 'Control', font=2, adj = 1)
+    
+    
+    segments(x0 = f$ilab.xpos[1], y0 = y_max - .5, x1 = f$ilab.xpos[2], y1 = y_max - .5 )
+    segments(f$ilab.xpos[3], y_max - .5, f$ilab.xpos[4], y_max - .5)
     
     
     ### set font expansion factor (as in forest() above) and use a bold font
@@ -222,12 +216,12 @@ rob_forest_times <-
     op <- graphics::par(font=2)
 
     ### switch to italic font
-    graphics::par(font=3)
+    graphics::par(font = 3)
 
     ### add text for the subgroups
     for (i in 1:nrow(dat_rob_vec)) {
 
-      graphics::text(x_min, dat_rob_vec$heading[i] + 1, pos=4, dat_rob_vec[[group.var]][i], cex = 1.2)
+      graphics::text(x_min, dat_rob_vec$heading[i] + 1, pos = 4, dat_rob_vec[[group.var]][i], cex = 1.2)
     }
 
     ### set par back to the original settings
@@ -249,22 +243,22 @@ rob_forest_times <-
     # Plot domain points
     for (j in 1:length(x_pos)) {
       graphics::points(
-        x = rep(x_pos[j], length(rows)),
-        y = rows,
-        pch = shapes[dat[[paste0("d", j)]]],
-        col = scales::alpha(cols[dat[[paste0("d", j)]]],0.6),
-        cex = rob_psize
+        x = rep(x_pos[j], length(rows))
+        , y = rows
+        , pch = shapes[dat[[paste0("d", j)]]]
+        , col = scales::alpha(cols[dat[[paste0("d", j)]]], 0.6)
+        , cex = rob_psize
       )
       graphics::text(x_pos[j], rows, syms[dat[[paste0("d", j)]]], cex = tsize)
     }
 
 
     graphics::points(
-      rep(x_overall_pos, length(rows)),
-      rows,
-      pch = 15,
-      col = scales::alpha(cols[dat[["overall"]]],0.6),
-      cex = rob_psize
+      rep(x_overall_pos, length(rows))
+      , rows
+      , pch = 15
+      , col = scales::alpha(cols[dat[["overall"]]], 0.6)
+      , cex = rob_psize
     )
     graphics::text(x_overall_pos, rows, syms[dat[["overall"]]], cex = tsize)
     graphics::par(op)
@@ -272,60 +266,64 @@ rob_forest_times <-
     # Add sub-group, summary polygons & text
 
     rma_flexi <- function(x) {
-        rma(yi = res$yi, vi = res$vi,
-          subset = (res$data$df[[group.var]] == x)
+        rma(yi = res$yi, vi = res$vi, subset = (res$data$df[[group.var]] == x)
         )
       }
 
     subgroup_res <- purrr::map(unique(dat[[group.var]]), rma_flexi)
 
     
-    if (length(unique(dat[[group.var]]))>1) {
+    if (length(unique(dat[[group.var]])) > 1) {
 
-      ### add summary polygons for the three subgroups
+      ### add summary polygons for the subgroups
       for (i in 1:nrow(dat_rob_vec)) {
 
         if (length(subgroup_res[[i]]$slab) == 1) {
           next
         }
+        
+        print(subgroup_res[[i]])
+        
 
         metafor::addpoly(
-          subgroup_res[[i]],
-          #fonts = c('serif'=3, 'mono'=3),
-          row = dat_rob_vec$stats[i] + 1,
-          textpos=textpos,
-          col = 'lightblue',
-         # transf = exp,
-          annotate = F,
-          mlab = mlabfun("\tRE Model for Subgroup", subgroup_res[[i]])
+          subgroup_res[[i]]
+          #, fonts = c('serif'=3, 'mono'=3)
+          , row = dat_rob_vec$stats[i] + 1
+          , textpos=textpos
+          , col = 'lightblue'
+          ,  annotate = F
+          ,  mlab = mlabfun("\tRE Model for Subgroup", subgroup_res[[i]])
         )
         
-        annotate_poly(subgroup_res[[i]]$b,
-                      subgroup_res[[i]]$ci.lb,
-                      subgroup_res[[i]]$ci.ub,
-                      textpos = textpos[2],
-                      atransf = NULL,
-                      rows = dat_rob_vec$stats[[i]] + 1, font = 3)
+        annotate_poly(subgroup_res[[i]]$b
+                      , subgroup_res[[i]]$ci.lb
+                      , subgroup_res[[i]]$ci.ub
+                      , textpos = textpos[2]
+                      , atransf = arg$transf
+                      , rows = dat_rob_vec$stats[[i]] + 1
+                      , font = 3
+                      )
 
       }
     }
   
-  rect(f$textpos[2], -1.5, x_adj, -0.5, col="white", border=NA)
-  annotate_poly(res$b, res$ci.lb, res$ci.ub,
-                  textpos = textpos[2],
-                  atransf = NULL,
-                  rows = -1, font = 2)
+  rect(f$textpos[2], -1.5, arg$at[length(arg$at)], -0.5, col = "white", border = NA)
+  annotate_poly(res$b, res$ci.lb, res$ci.ub
+                , textpos = textpos[2]
+                , atransf = arg$transf
+                , rows = -1
+                , font = 2
+                )
     
     #-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-
 
-    if (length(unique(dat[[group.var]]))>1 && nrow(dat)>1) {
+    if (length(unique(dat[[group.var]])) > 1 && nrow(dat) > 1) {
 
       # Fit meta-regression model to test for subgroup differences
       subgroup_res <- rma(yi = res$yi, vi = res$vi, mods = ~ dat[[group.var]], method = "DL")
 
-
       ### add text for the test of subgroup differences
-      graphics::text(x_min,-1.8, pos = 4,  bquote(
+      graphics::text(x_min, -1.8, pos = 4,  bquote(
         paste(
           "Test for Subgroup Differences: ",
           Q[M],
@@ -355,18 +353,18 @@ rob_forest_times <-
     if (rob_legend == TRUE) {
 
       graphics::legend(
-        legend_pos,
-        -1.8,
-        judgements,
-        pch = 15,
-        xjust = 0.5,
-        col = utils::head(cols,-1),
-        xpd = TRUE,
-        title = parse(text = "bold(\"Judgement\")"),
-        title.adj = 0.1,
-        cex = rob_legend_cex,
-        pt.cex = rob_legend_cex,
-        y.intersp = 0.7
+        legend_pos
+        , -1.8
+        , judgements
+        , pch = 15
+        , xjust = 0.5
+        , col = utils::head(cols, -1)
+        , xpd = TRUE
+        , title = parse(text = "bold(\"Judgement\")")
+        , title.adj = 0.1
+        , cex = rob_legend_cex
+        , pt.cex = rob_legend_cex
+        , y.intersp = 0.7
       )
     }
 
