@@ -33,7 +33,7 @@ mlabfun <- function(text, res) {
 
 
 
-annotate_poly <- function(yi, ci.lb, ci.ub, atransf = exp, textpos = 2, width, rows, cex=1.2){
+annotate_poly <- function(yi, ci.lb, ci.ub, atransf = exp, textpos = 2, width, rows, cex=1.2, font=1){
 
   if (is.function(atransf)) {
 
@@ -64,7 +64,7 @@ annotate_poly <- function(yi, ci.lb, ci.ub, atransf = exp, textpos = 2, width, r
 
   annotext <- cbind(annotext[,1], " [", annotext[,2], ", ", annotext[,3], "]")
   annotext <- apply(annotext, 1, paste, collapse="")
-  graphics::text(x=textpos, rows, labels=annotext, pos=2, cex=cex)
+  graphics::text(x=textpos, rows, labels=annotext, pos=2, cex=cex, font=font)
 
 }
 
