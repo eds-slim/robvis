@@ -7,7 +7,7 @@
 
 ############################################################################
 
-.pval <- function(p, digits=4, showeq=FALSE, sep="", add0=FALSE) {
+.pval <- function(p, digits=4, showeq=FALE, sep="", add0=FALSE) {
 
   digits  <- max(digits, 1)
   cutoff  <- paste(c(".", rep(0,digits-1),1), collapse="")
@@ -27,7 +27,8 @@ mlabfun <- function(text, res) {
                     # ", df = ", .(res$k - res$p),
                     "p ", .(.pval(res$pval, digits=2, showeq=TRUE, sep=" ")), "; ",
                     I^2, " = ", .(formatC(res$I2, digits=1, format="f")), "%, ",
-                    tau^2, " = ", .(formatC(res$tau2, digits=2, format="f")), ")")))
+                    tau^2, " = ", .(formatC(res$tau2, digits=2, format="f")), ", ",
+                    p_H, " = ", .(.pval(res$QEp, digits=2, showeq=TRUE, sep=" ")), ")")))
 
 }
 

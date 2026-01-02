@@ -97,7 +97,6 @@ rob_forest_times <-
     }
     rows <- rows + 1
     
-    print(rows)
 
     arg <- list(...)
 
@@ -172,7 +171,7 @@ rob_forest_times <-
     # Make forest plot
 
     if (is.null(arg$header)) {
-      arg$header = "Author(s) and Year"
+      arg$header = "Author, year"
     }
 
     if (is.null(arg$addpred)) {
@@ -195,7 +194,6 @@ rob_forest_times <-
     arg$ilab.pos <- 2
 
     ### set up forest plot (with 2x2 table counts added; the 'rows' argument is
-    ### used to specify in which rows the outcomes will be plotted)
     # metafor::forest(res, xlim=c(x_min, new_x_lim), atransf=exp,
     #        cex=1.2, ylim=c(-1.5, y_max), rows=rows, textpos=textpos,
     #        mlab=mlab, addpred = addpred)
@@ -209,6 +207,14 @@ rob_forest_times <-
     
     segments(x0 = f$ilab.xpos[1], y0 = y_max - .5, x1 = f$ilab.xpos[2], y1 = y_max - .5 )
     segments(f$ilab.xpos[3], y_max - .5, f$ilab.xpos[4], y_max - .5)
+    
+    if(is.function(arg$transf)){
+      eline <- arg$transf(coef(res))
+    }
+    else{
+      eline <- coef(res)
+    }
+    segments(eline,  -1, eline, y_max - 2, col = 'darkblue', lty="33", lwd=0.8)
     
     
     ### set font expansion factor (as in forest() above) and use a bold font
@@ -283,7 +289,6 @@ rob_forest_times <-
         }
         
         print(subgroup_res[[i]])
-        
 
         metafor::addpoly(
           subgroup_res[[i]]
@@ -307,6 +312,7 @@ rob_forest_times <-
       }
     }
   
+  ## manually add summary estimates
   rect(f$textpos[2], -1.5, arg$at[length(arg$at)], -0.5, col = "white", border = NA)
   annotate_poly(res$b, res$ci.lb, res$ci.ub
                 , textpos = textpos[2]
