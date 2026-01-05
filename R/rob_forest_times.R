@@ -106,7 +106,7 @@ rob_forest_times <-
    
   
 
-    x_max = arg$at[length(arg$at)] + dd*layout[3]/3
+    x_max = arg$at[length(arg$at)] + dd*layout[3] * 1 / (1 + 1.5)
     textpos <- c(x_min, x_max)
     y_max <- max(rows)+4
 
@@ -116,7 +116,7 @@ rob_forest_times <-
     dat <- dat |> 
       dplyr::mutate(dplyr::across(dplyr::matches("^d.$|overall"), clean_data))
 
-    ddd <- 2/3*dd*layout[3]/(max_domain_column)
+    ddd <-  1.5 / (1 + 1.5)*dd*layout[3]/(max_domain_column)
     x_pos <- seq(x_max + ddd, by = ddd, length.out = max_domain_column - 2)
 
     x_overall_pos <- max(x_pos) + ddd
@@ -272,6 +272,7 @@ rob_forest_times <-
     # Add sub-group, summary polygons & text
 
     rma_flexi <- function(x) {
+      
         rma(yi = res$yi, vi = res$vi, subset = (res$data$df[[group.var]] == x)
         )
       }
@@ -288,7 +289,6 @@ rob_forest_times <-
           next
         }
         
-        print(subgroup_res[[i]])
 
         metafor::addpoly(
           subgroup_res[[i]]
@@ -299,6 +299,7 @@ rob_forest_times <-
           ,  annotate = F
           ,  mlab = mlabfun("\tRE Model for Subgroup", subgroup_res[[i]])
         )
+          
         
         annotate_poly(subgroup_res[[i]]$b
                       , subgroup_res[[i]]$ci.lb
