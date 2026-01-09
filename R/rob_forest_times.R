@@ -374,7 +374,9 @@ rob_forest_times <-
     
     if(!is.null(title)){
       graphics::par(font = 2)
-      graphics::text(arg$refline, y_max+0.5, adj=.5, bquote(bold(.(title))), cex = 1.8)
+      x_limits <- graphics::par("usr")[1:2]
+      x_mid <- mean(x_limits)
+      graphics::text(x_mid, y_max+0.5, adj=.5, bquote(bold(.(title))), cex = 1.8)
       graphics::par(op)
     }
 
