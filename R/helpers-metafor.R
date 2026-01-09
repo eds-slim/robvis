@@ -28,7 +28,7 @@ mlabfun <- function(text, res) {
                     "p ", .(.pval(res$pval, digits=2, showeq=TRUE, sep=" ")), "; ",
                     I^2, " = ", .(formatC(res$I2, digits=1, format="f")), "%, ",
                     tau^2, " = ", .(formatC(res$tau2, digits=2, format="f")), ", ",
-                    p_H, " = ", .(.pval(res$QEp, digits=2, showeq=TRUE, sep=" ")), ")")))
+                    p_H, .(.pval(res$QEp, digits=2, showeq=TRUE, sep=" ")), ")")))
 
 }
 
