@@ -129,7 +129,6 @@ rob_forest_times <-
     # New right-hand x-axis limit
     new_x_lim <- x_overall_pos
 
-    rob_colours <- get_colour('ROBINS-I', "colourblind")
 
 
       judgements<-   c("Critical risk of bias"
@@ -139,12 +138,12 @@ rob_forest_times <-
                        , "No information"
                        )
       cols <- c(
-        c = rob_colours$critical_colour
-        , s = rob_colours$high_colour
-        , m = rob_colours$concerns_colour
-        , l = rob_colours$low_colour
-        , n = rob_colours$ni_colour
-        , x = rob_colours$na_colour
+        c = "#000000",  # Black (Critical)
+        s = "#440154",  # Dark purple (Serious)
+        m = "#F0E442",  # Red-orange (Moderate)
+        l = "#009E73",  # Green (Low)
+        n = "#6d7276",  # Dark gray (No information)
+        x = "#c4c4c4"   # Light gray (NA)
       )
 
       syms <- c(c = "!"
@@ -188,7 +187,7 @@ rob_forest_times <-
     arg$ylim=c(-2, y_max)
     arg$rows <- rows
     arg$textpos <- textpos
-    arg$col <- 'darkblue'
+    arg$col <- '#440154'
     arg$ilab <- cbind(dat$n.g1, dat$es.g1, dat$n.g2, dat$es.g2)
     arg$ilab.lab <- c('n', es, 'n', es)
     arg$ilab.pos <- 2
@@ -295,7 +294,7 @@ rob_forest_times <-
           #, fonts = c('serif'=3, 'mono'=3)
           , row = dat_rob_vec$stats[i] + 1
           , textpos=textpos
-          , col = 'lightblue'
+          , col = '#009E73'
           ,  annotate = F
           ,  mlab = mlabfun("\tRE Model for Subgroup", subgroup_res[[i]])
         )
