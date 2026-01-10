@@ -36,6 +36,8 @@ rob_forest_times <-
            , group.var = 'overall'
            , layout = c(1,1,1)
            , es = 'OTG/ min'
+           , arrow_left = NULL
+           , arrow_right = NULL           
            , ...
            ) {
 
@@ -191,6 +193,7 @@ rob_forest_times <-
     arg$ilab <- cbind(dat$n.g1, dat$es.g1, dat$n.g2, dat$es.g2)
     arg$ilab.lab <- c('n', es, 'n', es)
     arg$ilab.pos <- 2
+    arg$xlab <- ""
 
     ### set up forest plot (with 2x2 table counts added; the 'rows' argument is
     # metafor::forest(res, xlim=c(x_min, new_x_lim), atransf=exp,
@@ -200,13 +203,32 @@ rob_forest_times <-
     par(mar = c(5, 4, 4, 2) + 0.1, xpd = NA)
     f <- do.call(metafor::forest, arg)
 
-    graphics::text(mean(f$ilab.xpos[2]), y_max, 'Direct transport', font=2, adj = 1)
-    graphics::text(mean(f$ilab.xpos[4]), y_max, 'Control', font=2, adj = 1)
-    
-    
+    graphics::text(mean(c(f$ilab.xpos[1], f$ilab.xpos[2])), y_max, 'Bypass', font=2, adj = 0.5)
+    graphics::text(mean(c(f$ilab.xpos[3], f$ilab.xpos[4])), y_max, 'No Bypass', font=2, adj = 0.5)    
+
     segments(x0 = f$ilab.xpos[1], y0 = y_max - .5, x1 = f$ilab.xpos[2], y1 = y_max - .5 )
     segments(f$ilab.xpos[3], y_max - .5, f$ilab.xpos[4], y_max - .5)
-    
+
+    # Add custom direction labels if provided
+    if (is.null(arg$refline)) {
+      arg$refline <- 0  # Default to 0 for time differences
+    }
+
+    if (!is.null(arrow_left) || !is.null(arrow_right)) {
+      # Calculate offset as a proportion of the scale range
+      scale_range <- arg$at[length(arg$at)] - arg$at[1]
+      offset <- scale_range * 0.05  # 5% of the total range
+      
+      if (!is.null(arrow_left)) {
+        left_center <- arg$refline - offset
+        graphics::text(left_center, -4.2, paste0("← ", arrow_left), font=1, adj = 1, cex = 1.2)
+      }
+      if (!is.null(arrow_right)) {
+        right_center <- arg$refline + offset
+        graphics::text(right_center, -4.2, paste0(arrow_right, " →"), font=1, adj = 0, cex = 1.2)
+      }
+    }
+      
     if(is.function(arg$transf)){
       eline <- arg$transf(coef(res))
     }
@@ -351,7 +373,9 @@ rob_forest_times <-
     
     if(!is.null(title)){
       graphics::par(font = 2)
-      graphics::text(x_min, y_max, pos=4, bquote(bold(underline(.(title)))), cex = 1.2)
+      x_limits <- graphics::par("usr")[1:2]
+      x_mid <- mean(x_limits)
+      graphics::text(x_mid, y_max+0.5, adj=.5, bquote(bold(.(title))), cex = 1.8)
       graphics::par(op)
     }
 
