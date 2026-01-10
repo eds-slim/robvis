@@ -52,7 +52,7 @@ rob_forest_times <-
 
     dat <- res$data$df |> 
       dplyr::mutate(overall = factor(overall, levels = rob_levels)) |> 
-      dplyr::arrange(!!sym(group.var), desc(year))
+      dplyr::arrange(!!sym(group.var), desc(year), study)
        
 
 
