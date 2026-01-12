@@ -36,6 +36,7 @@ rob_forest_times <-
            , group.var = 'overall'
            , layout = c(1,1,1)
            , es = 'OTG/ min'
+           , lty = c('solid', 'dashed', 'solid')
            , ...
            ) {
 
@@ -213,7 +214,7 @@ rob_forest_times <-
     else{
       eline <- coef(res)
     }
-    segments(eline,  -1, eline, y_max - 2, col = 'darkblue', lty="33", lwd=0.8)
+    segments(eline,  -1, eline, y_max - 2, col = 'darkgrey', lty="33", lwd=0.8)
     
     
     ### set font expansion factor (as in forest() above) and use a bold font
@@ -295,6 +296,7 @@ rob_forest_times <-
           , row = dat_rob_vec$stats[i] + 1
           , textpos=textpos
           , col = '#009E73'
+          , addpred = TRUE
           ,  annotate = F
           ,  mlab = mlabfun("\tRE Model for Subgroup", subgroup_res[[i]])
         )
