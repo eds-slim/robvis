@@ -37,7 +37,9 @@ rob_forest_times <-
            , layout = c(1,1,1)
            , es = 'OTG/ min'
            , arrow_left = NULL
-           , arrow_right = NULL           
+           , arrow_right = NULL
+           , arrow_mid = NULL
+           , digits = 2L
            , ...
            ) {
 
@@ -54,7 +56,7 @@ rob_forest_times <-
 
     dat <- res$data$df |> 
       dplyr::mutate(overall = factor(overall, levels = rob_levels)) |> 
-      dplyr::arrange(!!sym(group.var), desc(year))
+      dplyr::arrange(!!sym(group.var), desc(year), author)
        
 
 
@@ -145,7 +147,7 @@ rob_forest_times <-
         m = "#F0E442",  # Red-orange (Moderate)
         l = "#009E73",  # Green (Low)
         n = "#6d7276",  # Dark gray (No information)
-        x = "#c4c4c4"   # Light gray (NA)
+        x = "white"     #c4c4c4"   # Light gray (NA)
       )
 
       syms <- c(c = "!"
@@ -194,6 +196,7 @@ rob_forest_times <-
     arg$ilab.lab <- c('n', es, 'n', es)
     arg$ilab.pos <- 2
     arg$xlab <- ""
+    arg$digits <-  digits
 
     ### set up forest plot (with 2x2 table counts added; the 'rows' argument is
     # metafor::forest(res, xlim=c(x_min, new_x_lim), atransf=exp,
@@ -206,15 +209,19 @@ rob_forest_times <-
     graphics::text(mean(c(f$ilab.xpos[1], f$ilab.xpos[2])), y_max, 'Bypass', font=2, adj = 0.5)
     graphics::text(mean(c(f$ilab.xpos[3], f$ilab.xpos[4])), y_max, 'No Bypass', font=2, adj = 0.5)    
 
-    segments(x0 = f$ilab.xpos[1], y0 = y_max - .5, x1 = f$ilab.xpos[2], y1 = y_max - .5 )
-    segments(f$ilab.xpos[3], y_max - .5, f$ilab.xpos[4], y_max - .5)
+    segments(x0 = f$ilab.xpos[1], y0 = y_max - .5, x1 = f$ilab.xpos[2], y1 = y_max - .5, lwd = arg$lwd )
+    segments(f$ilab.xpos[3], y_max - .5, f$ilab.xpos[4], y_max - .5, lwd = arg$lwd)
 
     # Add custom direction labels if provided
     if (is.null(arg$refline)) {
       arg$refline <- 0  # Default to 0 for time differences
     }
 
-    if (!is.null(arrow_left) || !is.null(arrow_right)) {
+    graphics::text(arg$at[[1]], -4.2, paste0("← ", arrow_left), font=1, adj = 0, cex = 1)
+    graphics::text(arg$at[[length(arg$at)]], -4.2, paste0(arrow_right, " →"), font=1, adj = 1, cex = 1)
+    graphics::text(mean(arg$at[c(1, length(arg$at))]), -4.2, arrow_mid, font=1, adj = .5, cex = 1)
+    
+    if ((!is.null(arrow_left) || !is.null(arrow_right)) && FALSE) {
       # Calculate offset as a proportion of the scale range
       scale_range <- arg$at[length(arg$at)] - arg$at[1]
       offset <- scale_range * 0.05  # 5% of the total range
@@ -235,7 +242,7 @@ rob_forest_times <-
     else{
       eline <- coef(res)
     }
-    segments(eline,  -1, eline, y_max - 2, col = 'darkblue', lty="33", lwd=0.8)
+    segments(eline,  -1, eline, y_max - 2, col = 'darkblue', lty="33", lwd=0.8*arg$lwd)
     
     
     ### set font expansion factor (as in forest() above) and use a bold font
@@ -257,13 +264,14 @@ rob_forest_times <-
     #-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-
     # Add risk of bias data
 
-    headers <- c(paste0("D",seq_len(max_domain_column-2)),"O")
+    #headers <- c(paste0("D",seq_len(max_domain_column-2)),"O")
+    headers <- c('C', 'I', 'S', 'M', 'O', 'R', 'Σ')
 
     graphics::par(font = 2)
     # Need to add handling of top here
     graphics::text(mean(header_row), y_max, labels = "Risk of Bias")
     graphics::text(header_row, y_max-2 + 1, labels = headers)
-    segments(x0 = header_row[1], y0 = y_max - .5, x1 = header_row[length(header_row)], y1 = y_max - .5 )
+    segments(x0 = header_row[1], y0 = y_max - .5, x1 = header_row[length(header_row)], y1 = y_max - .5, lwd = arg$lwd)
     
     graphics::par(op)
 
@@ -293,9 +301,11 @@ rob_forest_times <-
     # Add sub-group, summary polygons & text
 
     rma_flexi <- function(x) {
-      
-        rma(yi = res$yi, vi = res$vi, subset = (res$data$df[[group.var]] == x)
-        )
+        print(x)
+        ss <- (res$data$df|> filter(!is.na(overall)) %>% .[[group.var]]) == x
+        print(ss)
+        if(is.null(ss)){return(NULL)}
+        rma(yi = res$yi, vi = res$vi, subset = ss)
       }
 
     subgroup_res <- purrr::map(unique(dat[[group.var]]), rma_flexi)
@@ -317,6 +327,7 @@ rob_forest_times <-
           , row = dat_rob_vec$stats[i] + 1
           , textpos=textpos
           , col = '#009E73'
+          , lwd = arg$lwd
           ,  annotate = F
           ,  mlab = mlabfun("\tRE Model for Subgroup", subgroup_res[[i]])
         )
@@ -329,6 +340,7 @@ rob_forest_times <-
                       , atransf = arg$transf
                       , rows = dat_rob_vec$stats[[i]] + 1
                       , font = 3
+                      , digits = digits
                       )
 
       }
@@ -341,6 +353,7 @@ rob_forest_times <-
                 , atransf = arg$transf
                 , rows = -1
                 , font = 2
+                , digits = digits
                 )
     
     #-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-
@@ -348,7 +361,8 @@ rob_forest_times <-
     if (length(unique(dat[[group.var]])) > 1 && nrow(dat) > 1) {
 
       # Fit meta-regression model to test for subgroup differences
-      subgroup_res <- rma(yi = res$yi, vi = res$vi, mods = ~ dat[[group.var]], method = "DL")
+      print(dat)
+      subgroup_res <- rma(yi = res$yi, vi = res$vi, mods = ~(dat |> filter(overall!='x') %>% .[[group.var]]), method = "DL")
 
       ### add text for the test of subgroup differences
       graphics::text(x_min, -1.8, pos = 4,  bquote(
