@@ -34,7 +34,7 @@ mlabfun <- function(text, res) {
 
 
 
-annotate_poly <- function(yi, ci.lb, ci.ub, atransf = exp, textpos = 2, width, rows, cex=1, font=1){
+annotate_poly <- function(yi, ci.lb, ci.ub, atransf = exp, textpos = 2, width, rows, cex=1, font=1, digits = 2){
 
   if (is.function(atransf)) {
 
@@ -50,7 +50,7 @@ annotate_poly <- function(yi, ci.lb, ci.ub, atransf = exp, textpos = 2, width, r
 
   }
 
-  annotext <- .fcf(annotext, 2)
+  annotext <- .fcf(annotext, digits)
 
   if (missing(width) || is.null(width)) {
     width <- apply(annotext, 2, function(x) max(nchar(x)))

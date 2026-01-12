@@ -36,11 +36,14 @@ rob_forest_times <-
            , group.var = 'overall'
            , layout = c(1,1,1)
            , es = 'OTG/ min'
+<<<<<<< HEAD
+           , lty = c('solid', 'dashed', 'solid')
+=======
            , arrow_left = NULL
            , arrow_right = NULL
            , arrow_mid = NULL
            , digits = 2L
-           , lty = c('solid', 'dashed', 'solid')
+>>>>>>> 2ae04c1a136a63ca6e0593a8a39f0f5d93f68e11
            , ...
            ) {
 
@@ -57,7 +60,11 @@ rob_forest_times <-
 
     dat <- res$data$df |> 
       dplyr::mutate(overall = factor(overall, levels = rob_levels)) |> 
+<<<<<<< HEAD
+      dplyr::arrange(!!sym(group.var), desc(year), study)
+=======
       dplyr::arrange(!!sym(group.var), desc(year), author)
+>>>>>>> 2ae04c1a136a63ca6e0593a8a39f0f5d93f68e11
        
 
 
@@ -243,7 +250,11 @@ rob_forest_times <-
     else{
       eline <- coef(res)
     }
+<<<<<<< HEAD
+    segments(eline,  -1, eline, y_max - 2, col = 'darkgrey', lty="33", lwd=0.8)
+=======
     segments(eline,  -1, eline, y_max - 2, col = 'darkblue', lty="33", lwd=0.8*arg$lwd)
+>>>>>>> 2ae04c1a136a63ca6e0593a8a39f0f5d93f68e11
     
     
     ### set font expansion factor (as in forest() above) and use a bold font
@@ -328,8 +339,11 @@ rob_forest_times <-
           , row = dat_rob_vec$stats[i] + 1
           , textpos=textpos
           , col = '#009E73'
-          , lwd = arg$lwd
+<<<<<<< HEAD
           , addpred = TRUE
+=======
+          , lwd = arg$lwd
+>>>>>>> 2ae04c1a136a63ca6e0593a8a39f0f5d93f68e11
           ,  annotate = F
           ,  mlab = mlabfun("\tRE Model for Subgroup", subgroup_res[[i]])
         )
