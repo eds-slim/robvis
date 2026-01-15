@@ -106,7 +106,7 @@ rob_forest_times <-
     arg <- list(...)
 
     dd <- (arg$at[length(arg$at)] - arg$at[1])/layout[2]
-    x_min <- arg$at[1] - dd*layout[1]
+    x_min <- arg$at[1] - dd*layout[1] * 1.1
     arg$ilab.xpos <- arg$at[1] - c(1/3+1/5, 1/3, 1/5, 0)*dd*layout[1]
    
   
@@ -220,7 +220,7 @@ rob_forest_times <-
 
     graphics::text(arg$at[[1]], -4.2, paste0("← ", arrow_left), font=1, adj = 0, cex = 1)
     graphics::text(arg$at[[length(arg$at)]], -4.2, paste0(arrow_right, " →"), font=1, adj = 1, cex = 1)
-    graphics::text(mean(arg$at[c(1, length(arg$at))]), -4.2, arrow_mid, font=1, adj = .5, cex = 1)
+    graphics::text(mean(arg$at[c(1, length(arg$at))]), -5.2, arrow_mid, font=2, adj = .5, cex = 1.2)
     
     if ((!is.null(arrow_left) || !is.null(arrow_right)) && FALSE) {
       # Calculate offset as a proportion of the scale range
@@ -390,8 +390,8 @@ rob_forest_times <-
     if(!is.null(title)){
       graphics::par(font = 2)
       x_limits <- graphics::par("usr")[1:2]
-      x_mid <- mean(x_limits)
-      graphics::text(x_mid, y_max+0.5, adj=.5, bquote(bold(.(title))), cex = 1.8)
+      x_mid <- mean(arg$at[c(1, length(arg$at))])
+      graphics::text(x_mid, y_max+1, adj=.5, bquote(bold(.(title))), cex = 1.8)
       graphics::par(op)
     }
 
