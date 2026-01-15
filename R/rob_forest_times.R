@@ -34,12 +34,18 @@ rob_forest_times <-
            , rob_legend = TRUE
            , rob_legend_cex = 0.9
            , group.var = 'overall'
+           , subgroup.var = 'population'
+           , subgroup.label = 'Dx'
            , layout = c(1,1,1)
            , es = 'OTG/ min'
            , arrow_left = NULL
            , arrow_right = NULL
            , arrow_mid = NULL
            , digits = 2L
+           , crop_left = FALSE
+           , crop_right= FALSE
+           , addfit = FALSE
+           , mlab = NA
            , ...
            ) {
 
@@ -50,15 +56,17 @@ rob_forest_times <-
       stop("Result objects need to be of class \"meta\" - output from metafor package functions")
     }
 
-
+    arg <- list(...)
+    if(crop_left){arg$slab = NA}
+    
     colnames(res$data$df) <- stringr::str_to_lower(colnames(res$data$df))
 
 
     dat <- res$data$df |> 
       dplyr::mutate(overall = factor(overall, levels = rob_levels)) |> 
-      dplyr::arrange(!!sym(group.var), desc(year), author)
+      dplyr::arrange(!!sym(group.var), !!sym(subgroup.var), desc(year), author)
        
-
+  dat[which(is.na(dat$overall)), subgroup.var] <- NA
 
     # Get maximum domain
 
@@ -102,11 +110,10 @@ rob_forest_times <-
     rows <- rows + 1
     
 
-    arg <- list(...)
 
     dd <- (arg$at[length(arg$at)] - arg$at[1])/layout[2]
     x_min <- arg$at[1] - dd*layout[1]
-    arg$ilab.xpos <- arg$at[1] - c(1/3+1/5, 1/3, 1/5, 0)*dd*layout[1]
+    arg$ilab.xpos <- arg$at[1] - c(5.2/10, 5/10, 2.6/10, 2.4/10, 0)*dd*layout[1]
    
   
 
@@ -174,27 +181,34 @@ rob_forest_times <-
     # Make forest plot
 
     if (is.null(arg$header)) {
-      arg$header = "Author, year"
+      arg$header = "Author (year)"
     }
+    if(crop_left){ arg$header <- "" }
 
     if (is.null(arg$addpred)) {
       arg$addpred = FALSE
     }
 
+    arg$mlab = mlab
     if (is.null(arg$mlab)) {
       arg$mlab = mlabfun("RE Model for all studies", res)
     }
     
 
+    print(dat[[subgroup.var]])
+    
+    if(crop_left){ x_min <- mean(arg$ilab.xpos[c(2)]) }
+    if(crop_right){ new_x_lim <- textpos[[2]]}
+    
     arg$x <- res
     arg$xlim <- c(x_min, new_x_lim)
     arg$ylim=c(-2, y_max)
     arg$rows <- rows
     arg$textpos <- textpos
     arg$col <- '#440154'
-    arg$ilab <- cbind(dat$n.g1, dat$es.g1, dat$n.g2, dat$es.g2)
-    arg$ilab.lab <- c('n', es, 'n', es)
-    arg$ilab.pos <- 2
+    arg$ilab <- cbind(as.character(dat[[subgroup.var]]), dat$n.g1, dat$es.g1, dat$n.g2, dat$es.g2)
+    arg$ilab.lab <- c(subgroup.label, 'n', es, 'n', es)
+    arg$ilab.pos <- c(2, 4, 2, 4, 2)
     arg$xlab <- ""
     arg$digits <-  digits
 
@@ -206,20 +220,22 @@ rob_forest_times <-
     par(mar = c(5, 4, 4, 2) + 0.1, xpd = NA)
     f <- do.call(metafor::forest, arg)
 
-    graphics::text(mean(c(f$ilab.xpos[1], f$ilab.xpos[2])), y_max, 'Bypass', font=2, adj = 0.5)
-    graphics::text(mean(c(f$ilab.xpos[3], f$ilab.xpos[4])), y_max, 'No Bypass', font=2, adj = 0.5)    
+    graphics::text(mean(c(f$ilab.xpos[2], f$ilab.xpos[3])), y_max, 'Bypass', font=2, adj = 0.5)
+    graphics::text(mean(c(f$ilab.xpos[4], f$ilab.xpos[5])), y_max, 'No Bypass', font=2, adj = 0.5)    
 
-    segments(x0 = f$ilab.xpos[1], y0 = y_max - .5, x1 = f$ilab.xpos[2], y1 = y_max - .5, lwd = arg$lwd )
-    segments(f$ilab.xpos[3], y_max - .5, f$ilab.xpos[4], y_max - .5, lwd = arg$lwd)
+    segments(x0 = f$ilab.xpos[2], y0 = y_max - .5, x1 = f$ilab.xpos[3], y1 = y_max - .5, lwd = arg$lwd )
+    segments(f$ilab.xpos[4], y_max - .5, f$ilab.xpos[5], y_max - .5, lwd = arg$lwd)
 
     # Add custom direction labels if provided
     if (is.null(arg$refline)) {
       arg$refline <- 0  # Default to 0 for time differences
     }
 
-    graphics::text(arg$at[[1]], -4.2, paste0("← ", arrow_left), font=1, adj = 0, cex = 1)
-    graphics::text(arg$at[[length(arg$at)]], -4.2, paste0(arrow_right, " →"), font=1, adj = 1, cex = 1)
-    graphics::text(mean(arg$at[c(1, length(arg$at))]), -4.2, arrow_mid, font=1, adj = .5, cex = 1)
+    graphics::text(arg$at[[1]], -4.2, paste0("← ", arrow_left), font=1, adj = 0.5, cex = 1)
+    graphics::text(arg$at[[length(arg$at)]], -4.2, paste0(arrow_right, " →"), font=1, adj = .5, cex = 1)
+    
+    x_mid <- mean(arg$at[c(1,length(arg$at))])
+    graphics::text(x_mid, -4.2, arrow_mid, font=1, adj = .5, cex = 1)
     
     if ((!is.null(arrow_left) || !is.null(arrow_right)) && FALSE) {
       # Calculate offset as a proportion of the scale range
@@ -253,9 +269,11 @@ rob_forest_times <-
     graphics::par(font = 3)
 
     ### add text for the subgroups
+    if(!crop_left){
     for (i in 1:nrow(dat_rob_vec)) {
 
       graphics::text(x_min, dat_rob_vec$heading[i] + 1, pos = 4, dat_rob_vec[[group.var]][i], cex = 1.2)
+    }
     }
 
     ### set par back to the original settings
@@ -264,6 +282,8 @@ rob_forest_times <-
     #-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-
     # Add risk of bias data
 
+    if(!crop_right){
+    
     #headers <- c(paste0("D",seq_len(max_domain_column-2)),"O")
     headers <- c('C', 'I', 'S', 'M', 'O', 'R', 'Σ')
 
@@ -297,6 +317,8 @@ rob_forest_times <-
     )
     graphics::text(x_overall_pos, rows, syms[dat[["overall"]]], cex = tsize)
     graphics::par(op)
+    
+    }
     #-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-
     # Add sub-group, summary polygons & text
 
@@ -328,8 +350,14 @@ rob_forest_times <-
           , textpos=textpos
           , col = '#009E73'
           , lwd = arg$lwd
-          ,  annotate = F
-          ,  mlab = mlabfun("\tRE Model for Subgroup", subgroup_res[[i]])
+          , annotate = F
+          , addpred = arg$addpred
+          , mlab = NA)
+        
+        xx <- if(crop_left) arg$ilab.xpos[[1]] else textpos[[1]]
+        prefix <- if(crop_left) "" else "\tRE Model for Subgroup"
+        graphics::text(x = arg$ilab.xpos[[5]], y = dat_rob_vec$stats[i] + 1, pos = 2
+                       , label = parse(text = mlabfun(prefix, subgroup_res[[i]]))
         )
           
         
@@ -337,7 +365,7 @@ rob_forest_times <-
                       , subgroup_res[[i]]$ci.lb
                       , subgroup_res[[i]]$ci.ub
                       , textpos = textpos[2]
-                      , atransf = arg$transf
+                      , atransf = arg$atransf
                       , rows = dat_rob_vec$stats[[i]] + 1
                       , font = 3
                       , digits = digits
@@ -347,14 +375,31 @@ rob_forest_times <-
     }
   
   ## manually add summary estimates
-  rect(f$textpos[2], -1.5, arg$at[length(arg$at)], -0.5, col = "white", border = NA)
-  annotate_poly(res$b, res$ci.lb, res$ci.ub
-                , textpos = textpos[2]
-                , atransf = arg$transf
-                , rows = -1
-                , font = 2
-                , digits = digits
-                )
+  # metafor::addpoly(
+  #     res
+  #     #, fonts = c('serif'=3, 'mono'=3)
+  #     , row = -1
+  #     , textpos = textpos
+  #     , col = 'darkblue'
+  #     , lwd = arg$lwd
+  #     , annotate = F
+  #     , addpred = arg$addpred
+  #     , mlab = NA)  
+    
+  xx <- if(crop_left) arg$ilab.xpos[[1]] else textpos[[1]]
+  prefix <- if(crop_left) "" else "\tRE Model for all studies"
+  graphics::text(x = arg$ilab.xpos[[5]], y = -1, pos = 2
+                 , label = parse(text = mlabfun(prefix, res))
+  )
+  
+  # rect(f$textpos[2], -1.5, arg$at[length(arg$at)], -0.5, col = "white", border = NA)
+  # annotate_poly(res$b, res$ci.lb, res$ci.ub
+  #               , textpos = textpos[2]
+  #               , atransf = arg$atransf
+  #               , rows = -1
+  #               , font = 2
+  #               , digits = digits
+  #               )
     
     #-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-#-
 
@@ -365,9 +410,10 @@ rob_forest_times <-
       subgroup_res <- rma(yi = res$yi, vi = res$vi, mods = ~(dat |> filter(overall!='x') %>% .[[group.var]]), method = "DL")
 
       ### add text for the test of subgroup differences
-      graphics::text(x_min, -1.8, pos = 4,  bquote(
+      prefix <- if(crop_left) " " else "Test for Subgroup Differences: "
+      graphics::text(arg$ilab.xpos[[5]], -2, pos = 2, bquote(
         paste(
-          "Test for Subgroup Differences: ",
+          .(prefix),
           Q[M],
           " = ",
           .(formatC(
@@ -388,8 +434,8 @@ rob_forest_times <-
     if(!is.null(title)){
       graphics::par(font = 2)
       x_limits <- graphics::par("usr")[1:2]
-      x_mid <- mean(x_limits)
-      graphics::text(x_mid, y_max+0.5, adj=.5, bquote(bold(.(title))), cex = 1.8)
+      #x_mid <- mean(x_limits)
+      graphics::text(arg$refline, y_max+0.5, adj=.5, bquote(bold(.(title))), cex = 1.8)
       graphics::par(op)
     }
 
