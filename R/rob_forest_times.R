@@ -237,7 +237,7 @@ rob_forest_times <-
     graphics::text(arg$at[[length(arg$at)]], -4.2, paste0(arrow_right, " →"), font=1, adj = .5, cex = 1)
     
     x_mid <- mean(arg$at[c(1,length(arg$at))])
-    graphics::text(x_mid, -4.2, arrow_mid, font=1, adj = .5, cex = 1)
+    graphics::text(x_mid, -4.2, arrow_mid, font=1, adj = .5, cex = 1.2)
     
     if ((!is.null(arrow_left) || !is.null(arrow_right)) && FALSE) {
       # Calculate offset as a proportion of the scale range
@@ -286,8 +286,8 @@ rob_forest_times <-
 
     if(!crop_right){
     
-    #headers <- c(paste0("D",seq_len(max_domain_column-2)),"O")
-    headers <- c('C', 'I', 'S', 'M', 'O', 'R', 'Σ')
+    headers <- c(paste0("D",seq_len(max_domain_column-2)),"O")
+    #headers <- c('C', 'I', 'S', 'M', 'O', 'R', 'Σ')
 
     graphics::par(font = 2)
     # Need to add handling of top here
@@ -423,10 +423,8 @@ rob_forest_times <-
           )),
           ", df = ",
           .(subgroup_res$p - 1),
-          ", p = ",
-          .(formatC(
-            subgroup_res$QMp, digits = 2, format = "f"
-          ))
+          ", p ",
+          .(robvis:::.pval(subgroup_res$QMp, digits=2, showeq=TRUE, sep=" "))
         )
       ))
     }
@@ -437,7 +435,7 @@ rob_forest_times <-
       graphics::par(font = 2)
       x_limits <- graphics::par("usr")[1:2]
       #x_mid <- mean(x_limits)
-      graphics::text(arg$refline, y_max+0.5, adj=.5, bquote(bold(.(title))), cex = 1.8)
+      graphics::text(eline, y_max+0.5, adj=.5, bquote(bold(.(title))), cex = 1.8)
       graphics::par(op)
     }
 
