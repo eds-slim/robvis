@@ -65,7 +65,7 @@ rob_forest_times <-
 
     dat <- res$data$df |> 
       dplyr::mutate(overall = factor(overall, levels = rob_levels)) |> 
-      dplyr::arrange(!!sym(group.var), !!sym(subgroup.var), desc(year), author)
+      dplyr::arrange(!!sym(group.var),  desc(year), author)
        
   dat[which(is.na(dat$overall)), subgroup.var] <- NA
 
@@ -219,7 +219,7 @@ rob_forest_times <-
     #        cex=1.2, ylim=c(-1.5, y_max), rows=rows, textpos=textpos,
     #        mlab=mlab, addpred = addpred)
     
-    par(mar = c(5, 4, 4, 2) + 0.1, xpd = NA)
+    par(mar = c(5, 4, 4, 2) + 0.1, xpd = TRUE)
     f <- do.call(metafor::forest, arg)
 
     graphics::text(mean(c(f$ilab.xpos[2], f$ilab.xpos[3])), y_max, 'Bypass', font=2, adj = 0.5)
@@ -233,11 +233,11 @@ rob_forest_times <-
       arg$refline <- 0  # Default to 0 for time differences
     }
 
-    graphics::text(arg$at[[1]], -4.2, paste0("← ", arrow_left), font=1, adj = 0.5, cex = 1)
-    graphics::text(arg$at[[length(arg$at)]], -4.2, paste0(arrow_right, " →"), font=1, adj = .5, cex = 1)
+    graphics::text(arg$at[[1]], -4.2, paste0("← ", arrow_left), font=1, adj = 0.75, cex = 1)
+    graphics::text(arg$at[[length(arg$at)]], -4.2, paste0(arrow_right, " →"), font=1, adj = .25, cex = 1)
     
     x_mid <- mean(arg$at[c(1,length(arg$at))])
-    graphics::text(x_mid, -4.2, arrow_mid, font=1, adj = .5, cex = 1.2)
+    graphics::text(x_mid, -4.2, arrow_mid, font=1, adj = .5, cex = 1)
     
     if ((!is.null(arrow_left) || !is.null(arrow_right)) && FALSE) {
       # Calculate offset as a proportion of the scale range
