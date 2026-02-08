@@ -262,6 +262,8 @@ rob_forest_times <-
     }
     segments(eline,  -1, eline, y_max - 2, col = 'darkblue', lty="33", lwd=0.8*arg$lwd)
     
+    ### add the vertical reference line at 0
+    segments(arg$refline,  -2, arg$refline, y_max - 2, col = 'black', lty="solid", lwd=0.8*arg$lwd)
     
     ### set font expansion factor (as in forest() above) and use a bold font
 
